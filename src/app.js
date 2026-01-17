@@ -1,20 +1,23 @@
 import express from "express";
 import serverless from "serverless-http";
-
 import { initializeApp, cert, getApps } from "firebase-admin/app";
 import { getMessaging } from "firebase-admin/messaging";
 
 const app = express();
 
-/* 🔑 Service Account */
+// Security check for the environment variable
+const rawKey = process.env.FIREBASE_PRIVATE_KEY;
+if (!rawKey) {
+  console.error("CRITICAL: FIREBASE_PRIVATE_KEY is not defined in environment variables.");
+}
+
 const serviceAccount = {
   type: "service_account",
   project_id: "garage-44cc0",
   client_email: "firebase-adminsdk-fbsvc@garage-44cc0.iam.gserviceaccount.com",
-  private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n"),
+  private_key: rawKey ? rawKey.replace(/\\n/g, "\n") : "",
 };
 
-/* 🔥 Initialisation Firebase (UNE seule fois) */
 if (!getApps().length) {
   initializeApp({
     credential: cert(serviceAccount),
@@ -22,28 +25,33 @@ if (!getApps().length) {
 }
 
 app.get("/send", async (req, res) => {
+  const { token } = req.query;
+
+  if (!token) {
+    return res.status(400).json({ error: "Token is required" });
+  }
+
+  const message = {
+    notification: {
+      title: "Notification Title",
+      body: "Notification Body",
+    },
+    webpush: {
+      fcmOptions: { link: "https://your-site.com" },
+    },
+    token: token,
+  };
+
   try {
-    const token = req.query.token;
-    if (!token) {
-      return res.status(400).json({ error: "Token manquant" });
-    }
-
-    const message = {
-      notification: {
-        title: "hehehehehe",
-        body: "hohohohoho",
-      },
-      webpush: {
-        fcmOptions: { link: "https://www.google.com" },
-      },
-      token,
-    };
-
     const response = await getMessaging().send(message);
-    res.json({ success: true, response });
+    return res.status(200).json({ success: true, messageId: response });
   } catch (err) {
-    console.error("Erreur Firebase :", err);
-    res.status(500).json({ error: err.message });
+    // Distinguish between invalid tokens and server errors
+    if (err.code === 'messaging/registration-token-not-registered') {
+        return res.status(410).json({ error: "Token is no longer valid" });
+    }
+    console.error("FCM Error:", err);
+    return res.status(500).json({ error: "Internal Server Error" });
   }
 });
 
