@@ -1,53 +1,51 @@
 import express from "express";
 import serverless from "serverless-http";
-import * as admin from "firebase-admin"; // Use this to define 'admin'
+
+import { initializeApp, cert, getApps } from "firebase-admin/app";
+import { getMessaging } from "firebase-admin/messaging";
 
 const app = express();
 
+/* 🔑 Service Account */
 const serviceAccount = {
+  type: "service_account",
   project_id: "garage-44cc0",
-  // Crucial: Fixes the newline issue in Vercel environment variables
-  private_key: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
   client_email: "firebase-adminsdk-fbsvc@garage-44cc0.iam.gserviceaccount.com",
+  private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n"),
 };
 
-// Check if any Firebase apps are already initialized
-// This prevents the "App already exists" error on warm starts
-if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-    databaseURL: "https://garage-44cc0-default-rtdb.europe-west1.firebasedatabase.app",
+/* 🔥 Initialisation Firebase (UNE seule fois) */
+if (!getApps().length) {
+  initializeApp({
+    credential: cert(serviceAccount),
+    databaseURL:
+      "https://garage-44cc0-default-rtdb.europe-west1.firebasedatabase.app",
   });
 }
 
 app.get("/send", async (req, res) => {
-  const { token } = req.query;
-
-  if (!token) {
-    return res.status(400).json({ error: "Token manquant" });
-  }
-
   try {
+    const token = req.query.token;
+    if (!token) {
+      return res.status(400).json({ error: "Token manquant" });
+    }
+
     const message = {
-      notification: { 
-        title: "Notification de Test", 
-        body: "Ceci est un message de votre serveur Express !" 
+      notification: {
+        title: "hehehehehe",
+        body: "hohohohoho",
       },
-      webpush: { 
-        fcmOptions: { link: "https://www.google.com" } 
+      webpush: {
+        fcmOptions: { link: "https://www.google.com" },
       },
-      token: String(token),
+      token,
     };
 
-    // Use admin.messaging()
-    const response = await admin.messaging().send(message);
-    res.status(200).json({ success: true, messageId: response });
+    const response = await getMessaging().send(message);
+    res.json({ success: true, response });
   } catch (err) {
-    console.error("FCM Error:", err);
-    res.status(500).json({ 
-      error: "Failed to send notification", 
-      details: err.message 
-    });
+    console.error("Erreur Firebase :", err);
+    res.status(500).json({ error: err.message });
   }
 });
 
