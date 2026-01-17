@@ -5,7 +5,18 @@ import { initializeApp, credential, messaging } from "firebase-admin";
 const app = express();
 
 /* 🔑 IMPORTANT : convertir la variable d’environnement en objet */
-const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+const serviceAccount = {
+  type: "service_account",
+  project_id: "garage-44cc0",
+  client_email: "firebase-adminsdk-fbsvc@garage-44cc0.iam.gserviceaccount.com",
+  auth_uri: "https://accounts.google.com/o/oauth2/auth",
+  token_uri: "https://oauth2.googleapis.com/token",
+  auth_provider_x509_cert_url: "https://www.googleapis.com/oauth2/v1/certs",
+  client_x509_cert_url:
+    "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-fbsvc%40garage-44cc0.iam.gserviceaccount.com",
+
+  private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n"),
+};
 
 initializeApp({
   credential: credential.cert(serviceAccount),
@@ -33,6 +44,5 @@ app.get("/send", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-
 
 export default serverless(app);
