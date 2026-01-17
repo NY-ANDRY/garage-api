@@ -5,7 +5,6 @@ import { getMessaging } from "firebase-admin/messaging";
 
 const app = express();
 
-// Security check for the environment variable
 const rawKey = process.env.FIREBASE_PRIVATE_KEY;
 if (!rawKey) {
   console.error("CRITICAL: FIREBASE_PRIVATE_KEY is not defined in environment variables.");
@@ -13,8 +12,8 @@ if (!rawKey) {
 
 const serviceAccount = {
   type: "service_account",
-  project_id: "garage-44cc0",
-  client_email: "firebase-adminsdk-fbsvc@garage-44cc0.iam.gserviceaccount.com",
+  project_id: process.env.FIREBASE_PROJECT_ID,
+  client_email: process.env.FIREBASE_CLIENT_EMAIL,
   private_key: rawKey ? rawKey.replace(/\\n/g, "\n") : "",
 };
 
@@ -39,16 +38,15 @@ app.get("/send", async (req, res) => {
     webpush: {
       fcmOptions: { link: "https://your-site.com" },
     },
-    token: token,
+    token,
   };
 
   try {
     const response = await getMessaging().send(message);
     return res.status(200).json({ success: true, messageId: response });
   } catch (err) {
-    // Distinguish between invalid tokens and server errors
-    if (err.code === 'messaging/registration-token-not-registered') {
-        return res.status(410).json({ error: "Token is no longer valid" });
+    if (err.code === "messaging/registration-token-not-registered") {
+      return res.status(410).json({ error: "Token is no longer valid" });
     }
     console.error("FCM Error:", err);
     return res.status(500).json({ error: "Internal Server Error" });
