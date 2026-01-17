@@ -17,9 +17,9 @@ const serviceAccount = {
 };
 
 // Singleton pattern for Firebase initialization
-if (!getApps().length) {
-  initializeApp({
-    credential: credential.cert(serviceAccount),
+if (admin.apps.length === 0) {
+  admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount),
     databaseURL: "https://garage-44cc0-default-rtdb.europe-west1.firebasedatabase.app",
   });
 }
