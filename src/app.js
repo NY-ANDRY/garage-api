@@ -15,7 +15,7 @@ const serviceAccount = {
   client_x509_cert_url:
     "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-fbsvc%40garage-44cc0.iam.gserviceaccount.com",
 
-  private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n"),
+  private_key: process.env.FIREBASE_PRIVATE_KEY,
 };
 
 initializeApp({
