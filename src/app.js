@@ -15,24 +15,24 @@ initializeApp({
 
 app.get("/send", async (req, res) => {
   try {
+    const token = req.query.token;
+    if (!token) {
+      return res.status(400).json({ error: "Token manquant" });
+    }
+
     const message = {
-      notification: {
-        title: "hehehehehe",
-        body: "hohohohoho",
-      },
-      webpush: {
-        fcmOptions: {
-          link: "http://www.google.com",
-        },
-      },
-      token: req.query.token, // 🔥 dynamique
+      notification: { title: "hehehehehe", body: "hohohohoho" },
+      webpush: { fcmOptions: { link: "http://www.google.com" } },
+      token,
     };
 
     const response = await messaging().send(message);
     res.json({ success: true, response });
   } catch (err) {
+    console.error("Erreur Firebase :", err);
     res.status(500).json({ error: err.message });
   }
 });
+
 
 export default serverless(app);
