@@ -1,9 +1,9 @@
-import express from "express";
-import serverless from "serverless-http";
-import { initializeApp, cert, getApps } from "firebase-admin/app";
-import { getMessaging } from "firebase-admin/messaging";
+const express = require("express");
+const { initializeApp, cert, getApps } = require("firebase-admin/app");
+const { getMessaging } = require("firebase-admin/messaging");
 
 const app = express();
+app.use(express.json());
 
 const rawKey = process.env.FIREBASE_PRIVATE_KEY;
 if (!rawKey) {
@@ -53,4 +53,4 @@ app.get("/send", async (req, res) => {
   }
 });
 
-export default serverless(app);
+module.exports = app;
