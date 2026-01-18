@@ -19,7 +19,9 @@ app.use((req, res, next) => {
 
 const rawKey = process.env.FIREBASE_PRIVATE_KEY;
 if (!rawKey) {
-  console.error("CRITICAL: FIREBASE_PRIVATE_KEY is not defined in environment variables.");
+  console.error(
+    "CRITICAL: FIREBASE_PRIVATE_KEY is not defined in environment variables.",
+  );
 }
 
 const serviceAccount = {
@@ -43,25 +45,25 @@ app.get("/send", async (req, res) => {
   }
 
   const message = {
+    // 1. Bloc générique (Prioritaire pour Android/iOS en arrière-plan)
     notification: {
-      title: "Test avec Images",
-      body: "Ceci est un exemple de notification avec icône et image.",
+      title: "Notification Mobile & Web",
+      body: "Ceci fonctionne sur toutes les plateformes.",
+      image: "https://picsum.photos/seed/picsum/600/400", // Image pour mobile
     },
+    // 2. Bloc spécifique Web
     webpush: {
       notification: {
-        // Icône ronde/carrée à côté du texte
-        icon: "https://picsum.photos/seed/picsum/600/400", 
-        
-        // Grande image d'illustration dans le corps de la notification
-        image: "https://picsum.photos/seed/picsum/600/400", 
-        
-        // Icône monochrome pour la barre d'état Android
-        badge: "https://picsum.photos/seed/picsum/600/400",
-        
-        fcmOptions: { 
-          link: "https://nyandry.vercel.app" 
-        },
-      }
+        title: "Notification Mobile & Web",
+        body: "Ceci fonctionne sur toutes les plateformes.",
+        icon: "https://via.placeholder.com/192/007bff/ffffff?text=LOGO",
+        image: "https://picsum.photos/seed/picsum/600/400",
+        badge: "https://via.placeholder.com/96/000000/ffffff?text=B",
+        requireInteraction: true, // Garde la notification affichée
+      },
+      fcmOptions: {
+        link: "https://your-site.com",
+      },
     },
     token,
   };
