@@ -44,11 +44,24 @@ app.get("/send", async (req, res) => {
 
   const message = {
     notification: {
-      title: "Notification Title",
-      body: "Notification Body",
+      title: "Test avec Images",
+      body: "Ceci est un exemple de notification avec icône et image.",
     },
     webpush: {
-      fcmOptions: { link: "https://your-site.com" },
+      notification: {
+        // Icône ronde/carrée à côté du texte
+        icon: "https://picsum.photos/seed/picsum/600/400", 
+        
+        // Grande image d'illustration dans le corps de la notification
+        image: "https://picsum.photos/seed/picsum/600/400", 
+        
+        // Icône monochrome pour la barre d'état Android
+        badge: "https://picsum.photos/seed/picsum/600/400",
+        
+        fcmOptions: { 
+          link: "https://nyandry.vercel.app" 
+        },
+      }
     },
     token,
   };
