@@ -55,7 +55,9 @@ app.get("/send", async (req, res) => {
 
   try {
     const response = await getMessaging().send(message);
-    return res.status(200).json({ success: true, messageId: response });
+    setTimeout(() => {
+      return res.status(200).json({ success: true, messageId: response });
+    }, 3000);
   } catch (err) {
     if (err.code === "messaging/registration-token-not-registered") {
       return res.status(410).json({ error: "Token is no longer valid" });
