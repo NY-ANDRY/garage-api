@@ -73,13 +73,14 @@ app.get("/send", async (req, res) => {
 
   try {
 
+    const response = await getMessaging().send(message);
     await db.collection("notifications").add({
       title: message.notification.title,
       description: "notificaiton body",
-      date: Timestamp.now()
+      date: Timestamp.now(),
+      fcmMessageId: response,
     });
 
-    const response = await getMessaging().send(message);
     return res.status(200).json({ success: true, messageId: response });
   } catch (err) {
     if (err.code === "messaging/registration-token-not-registered") {
