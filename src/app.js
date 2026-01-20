@@ -1,6 +1,7 @@
 import express, { json } from "express";
 import { initializeApp, cert, getApps } from "firebase-admin/app";
 import { getMessaging } from "firebase-admin/messaging";
+import { getFirestore, Timestamp } from "firebase-admin/firestore";
 
 const app = express();
 app.use(json());
@@ -37,6 +38,8 @@ if (!getApps().length) {
   });
 }
 
+const db = getFirestore();
+
 app.get("/send", async (req, res) => {
   const { token } = req.query;
 
@@ -69,6 +72,14 @@ app.get("/send", async (req, res) => {
   };
 
   try {
+
+    await db.collection("notifications").add({
+      title: message.notification.title,
+      description: "notificaiton body",
+      date: Timestamp.now(),
+      fcmMessageId: response,
+    });
+
     const response = await getMessaging().send(message);
     return res.status(200).json({ success: true, messageId: response });
   } catch (err) {
