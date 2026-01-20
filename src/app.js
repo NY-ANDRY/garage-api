@@ -76,8 +76,7 @@ app.get("/send", async (req, res) => {
     await db.collection("notifications").add({
       title: message.notification.title,
       description: "notificaiton body",
-      date: Timestamp.now(),
-      fcmMessageId: response,
+      date: Timestamp.now()
     });
 
     const response = await getMessaging().send(message);
