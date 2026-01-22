@@ -62,6 +62,18 @@ app.get("/send", async (req, res) => {
         icon: "https://via.placeholder.com/192/007bff/ffffff?text=LOGO",
         image: "https://picsum.photos/seed/picsum/600/400",
         badge: "https://via.placeholder.com/96/000000/ffffff?text=B",
+        actions: [
+          {
+            action: "open",
+            title: "Ouvrir",
+            icon: "https://via.placeholder.com/64/00ff00",
+          },
+          {
+            action: "dismiss",
+            title: "Ignorer",
+            icon: "https://via.placeholder.com/64/ff0000",
+          },
+        ],
         requireInteraction: true, // Garde la notification affichée
       },
       fcmOptions: {
@@ -72,7 +84,6 @@ app.get("/send", async (req, res) => {
   };
 
   try {
-
     const response = await getMessaging().send(message);
     await db.collection("notifications").add({
       title: message.notification.title,
