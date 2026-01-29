@@ -41,32 +41,26 @@ if (!getApps().length) {
 const db = getFirestore();
 
 app.post("/send", async (req, res) => {
-  const { uid, reparationId } = req.body;
+  const { reparationId } = req.body;
 
-  if (!uid) {
-    return res.status(400).json({ error: "uid is required" });
-  }
   if (!reparationId) {
     return res.status(400).json({ error: "reparationId is required" });
   }
 
   try {
-    // 1️⃣ Récupérer l'utilisateur depuis Firestore
-    const userDoc = await db.collection("users").doc(uid).get();
-    if (!userDoc.exists) {
-      return res.status(404).json({ error: "Utilisateur non trouvé" });
-    }
-    const userData = userDoc.data();
-    const fcmToken = userData?.fcmToken;
-
-    // 2️⃣ Récupérer la réparation depuis Firestore
     const repDoc = await db.collection("reparations").doc(reparationId).get();
     if (!repDoc.exists) {
       return res.status(404).json({ error: "Réparation non trouvée" });
     }
     const reparation = repDoc.data();
 
-    // 3️⃣ Mettre à jour le statut = 2 et ajouter l'historique
+    const userDoc = await db.collection("users").doc(reparation.user.uid).get();
+    if (!userDoc.exists) {
+      return res.status(404).json({ error: "Utilisateur non trouvé" });
+    }
+    const userData = userDoc.data();
+    const fcmToken = userData?.fcmToken;
+
     await db
       .collection("reparations")
       .doc(reparationId)
@@ -78,72 +72,70 @@ app.post("/send", async (req, res) => {
         }),
       });
 
-    // 4️⃣ Envoyer la notification si le token existe
-    if (fcmToken) {
-      const message = {
-        notification: {
-          title: "Réparation terminée",
-          body: `Votre voiture ${reparation.voiture.nom} (${reparation.voiture.numero}) a été réparée ✅`,
-          image: reparation.voiture.url_img || undefined,
-        },
-        webpush: {
-          notification: {
-            title: "Réparation terminée",
-            body: `Votre voiture ${reparation.voiture.nom} (${reparation.voiture.numero}) a été réparée ✅`,
-            icon: "https://via.placeholder.com/192/007bff/ffffff?text=LOGO",
-            image:
-              reparation.voiture.url_img ||
-              "https://picsum.photos/seed/picsum/600/400",
-            badge: "https://via.placeholder.com/96/000000/ffffff?text=B",
-            actions: [
-              {
-                action: "open",
-                title: "Voir la réparation",
-                icon: "https://via.placeholder.com/64/00ff00",
-              },
-              {
-                action: "dismiss",
-                title: "Ignorer",
-                icon: "https://via.placeholder.com/64/ff0000",
-              },
-            ],
-            requireInteraction: true,
-          },
-          fcmOptions: {
-            link: "https://your-site.com/reparations",
-          },
-        },
-        token: fcmToken,
-      };
-
-      const response = await getMessaging().send(message);
-
-      // 5️⃣ Enregistrer la notification dans Firestore
-      await db.collection("notifications").add({
-        title: message.notification.title,
-        description: message.notification.body,
-        date: Timestamp.now(),
-        fcmMessageId: response,
-        user: {
-          uid,
-          displayName: userData.displayName || null,
-          email: userData.email || null,
-        },
-        reparationId,
-      });
-
-      return res.status(200).json({
-        success: true,
-        message: "Réparation mise à jour et notification envoyée",
-        fcmMessageId: response,
-      });
-    } else {
+    if (!fcmToken) {
       return res.status(200).json({
         success: true,
         message:
           "Réparation mise à jour, mais pas de token FCM trouvé pour l'utilisateur",
       });
     }
+
+    const message = {
+      notification: {
+        title: "Réparation terminée",
+        body: `Votre voiture ${reparation.voiture.nom} (${reparation.voiture.numero}) a été réparée`,
+        image: reparation.voiture.url_img || undefined,
+      },
+      webpush: {
+        notification: {
+          title: "Réparation terminée",
+          body: `Votre voiture ${reparation.voiture.nom} (${reparation.voiture.numero}) a été réparée`,
+          icon: "https://via.placeholder.com/192/007bff/ffffff?text=LOGO",
+          image:
+            reparation.voiture.url_img ||
+            "https://picsum.photos/seed/picsum/600/400",
+          badge: "https://via.placeholder.com/96/000000/ffffff?text=B",
+          actions: [
+            {
+              action: "open",
+              title: "Voir la réparation",
+              icon: "https://via.placeholder.com/64/00ff00",
+            },
+            {
+              action: "dismiss",
+              title: "Ignorer",
+              icon: "https://via.placeholder.com/64/ff0000",
+            },
+          ],
+          requireInteraction: true,
+        },
+        fcmOptions: {
+          link: "https://your-site.com/reparations",
+        },
+      },
+      token: fcmToken,
+    };
+
+    const response = await getMessaging().send(message);
+
+    await db.collection("notifications").add({
+      title: message.notification.title,
+      description: message.notification.body,
+      date: Timestamp.now(),
+      fcmMessageId: response,
+      user: {
+        uid,
+        displayName: userData.displayName || null,
+        email: userData.email || null,
+      },
+      reparationId,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Réparation mise à jour et notification envoyée",
+      fcmMessageId: response,
+    });
   } catch (err) {
     console.error("Erreur FCM ou Firestore:", err);
     if (err.code === "messaging/registration-token-not-registered") {
