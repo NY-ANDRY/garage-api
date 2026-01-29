@@ -54,7 +54,9 @@ app.post("/send", async (req, res) => {
     }
     const reparation = repDoc.data();
 
-    const userDoc = await db.collection("users").doc(reparation.user.uid).get();
+    const uid = reparation.user.uid;
+
+    const userDoc = await db.collection("users").doc(uid).get();
     if (!userDoc.exists) {
       return res.status(404).json({ error: "Utilisateur non trouvé" });
     }
