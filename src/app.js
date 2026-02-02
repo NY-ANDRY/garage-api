@@ -149,7 +149,7 @@ app.post("/send", async (req, res) => {
 
 app.get("/test", async (req, res) => {
   try {
-    return res.status(200).json({ ok: "ok" });
+    return res.status(200).json({ ok: "ok okkk" });
   } catch (err) {
     return res.status(500).json({ error: "Erreur serveur" });
   }
