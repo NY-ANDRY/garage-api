@@ -147,4 +147,12 @@ app.post("/send", async (req, res) => {
   }
 });
 
+app.post("/test", async (req, res) => {
+  try {
+    return res.status(200).json({ ok: "ok" });
+  } catch (err) {
+    return res.status(500).json({ error: "Erreur serveur" });
+  }
+});
+
 export default app;
