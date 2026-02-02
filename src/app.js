@@ -155,4 +155,25 @@ app.get("/test", async (req, res) => {
   }
 });
 
+// yako
+
+app.get("/reparations", async (req, res) => {
+  try {
+    const snapshot = await db.collection("reparations").get();
+
+    const reparations = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    return res.status(200).json(reparations);
+  } catch (err) {
+    console.error("Erreur récupération réparations:", err);
+    return res.status(500).json({ error: "Erreur serveur" });
+  }
+});
+
+
+//
+
 export default app;
