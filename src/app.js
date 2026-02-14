@@ -41,28 +41,35 @@ if (!getApps().length) {
 const db = getFirestore();
 
 app.post("/send", async (req, res) => {
-  const { user, reparation } = req.body;
+  const { uid, reparationId } = req.body;
 
-  if (!user?.uid) {
-    return res.status(400).json({ error: "user.uid is required" });
+  if (!uid) {
+    return res.status(400).json({ error: "uid is required" });
   }
-  if (!reparation?.id) {
-    return res.status(400).json({ error: "reparation.id is required" });
+  if (!reparationId) {
+    return res.status(400).json({ error: "reparationId is required" });
   }
 
   try {
-    // 1️⃣ Récupérer le token FCM de l'utilisateur
-    const userDoc = await db.collection("users").doc(user.uid).get();
+    // 1️⃣ Récupérer l'utilisateur depuis Firestore
+    const userDoc = await db.collection("users").doc(uid).get();
     if (!userDoc.exists) {
       return res.status(404).json({ error: "Utilisateur non trouvé" });
     }
     const userData = userDoc.data();
     const fcmToken = userData?.fcmToken;
 
-    // 2️⃣ Mettre à jour le statut de la réparation = 2 et ajouter dans l'historique
+    // 2️⃣ Récupérer la réparation depuis Firestore
+    const repDoc = await db.collection("reparations").doc(reparationId).get();
+    if (!repDoc.exists) {
+      return res.status(404).json({ error: "Réparation non trouvée" });
+    }
+    const reparation = repDoc.data();
+
+    // 3️⃣ Mettre à jour le statut = 2 et ajouter l'historique
     await db
       .collection("reparations")
-      .doc(reparation.id)
+      .doc(reparationId)
       .update({
         statut: 2,
         statut_histo: FieldValue.arrayUnion({
@@ -71,18 +78,18 @@ app.post("/send", async (req, res) => {
         }),
       });
 
-    // 3️⃣ Préparer la notification
+    // 4️⃣ Envoyer la notification si le token existe
     if (fcmToken) {
       const message = {
         notification: {
           title: "Réparation terminée",
-          body: `Votre voiture ${reparation.voiture.nom} (${reparation.voiture.numero}) a été réparée`,
+          body: `Votre voiture ${reparation.voiture.nom} (${reparation.voiture.numero}) a été réparée ✅`,
           image: reparation.voiture.url_img || undefined,
         },
         webpush: {
           notification: {
             title: "Réparation terminée",
-            body: `Votre voiture ${reparation.voiture.nom} (${reparation.voiture.numero}) a été réparée`,
+            body: `Votre voiture ${reparation.voiture.nom} (${reparation.voiture.numero}) a été réparée ✅`,
             icon: "https://via.placeholder.com/192/007bff/ffffff?text=LOGO",
             image:
               reparation.voiture.url_img ||
@@ -111,18 +118,18 @@ app.post("/send", async (req, res) => {
 
       const response = await getMessaging().send(message);
 
-      // 4️⃣ Enregistrer la notification dans Firestore
+      // 5️⃣ Enregistrer la notification dans Firestore
       await db.collection("notifications").add({
         title: message.notification.title,
         description: message.notification.body,
         date: Timestamp.now(),
         fcmMessageId: response,
         user: {
-          uid: user.uid,
+          uid,
           displayName: userData.displayName || null,
           email: userData.email || null,
         },
-        reparationId: reparation.id,
+        reparationId,
       });
 
       return res.status(200).json({
